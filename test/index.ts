@@ -24,5 +24,43 @@ describe("Promise", ()=>{
   it("new Promise(fn)会生成一个对象，对象有then方法", ()=>{
     const promise = new Promise(()=>{});
     assert.isFunction(promise.then);
+  });
+  it("new Promise(fn) 中的 fn 立即执行", ()=>{
+    let called = false;
+    const promise = new Promise(()=>{
+      called = true;
+    })
+    // @ts-ignore
+    assert(called === true)
+  })
+  it("new Promise(fn)中的fn执行的时候接收 resolve 和 reject 两个函数", ()=>{
+    let called = false;
+    const promise = new Promise((resolve, reject)=>{
+      called = true;
+      assert.isFunction(resolve);
+      assert.isFunction(reject);
+    })
+    // @ts-ignore
+    assert(called)
+  })
+
+  it("promise.then(success)中的success 会在 resolve被调用的时候，执行", (done)=>{
+    // done 表示等待的执行
+    let called = false;
+    const promise = new Promise((resolve, reject)=>{
+      // 该函数没有执行
+      assert(called === false); // 之前不是ture
+      resolve();
+      setTimeout(()=>{
+        assert(called === true); //  resolve 之后是true，证明resolve()调用了succeed
+        done()
+      })
+      console.log('代码执行了')
+      // 该函数执行了
+    })
+    // @ts-ignore
+    promise.then(()=>{
+      called = true
+    })
   })
 })
