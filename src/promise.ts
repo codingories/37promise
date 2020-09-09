@@ -1,14 +1,32 @@
 class Promise2{
-  succeed = null; // 对象的属性, 类的属性要加static
-  fail = null;
-  resolve = ()=>{
+  state = 'pending';
+  callbacks = [];
+  resolve = (result)=>{
+    if (this.state !== "pending") {
+      return;
+    }
+    this.state = "fulfilled";
     setTimeout(()=>{
-      this.succeed()
+      // 遍历 callbacks,调用所有的handle[0]
+      this.callbacks.forEach((handle)=>{
+        if(typeof handle[0] === 'function'){
+          handle[0].call(undefined, result)
+        }
+      })
     },0)
   };
-  reject = ()=>{
+  reject = (reason)=>{
+    if (this.state !== "pending") {
+      return;
+    }
+    this.state = "rejected";
     setTimeout(()=>{
-      this.fail()
+      this.callbacks.forEach((handle)=>{
+        // 遍历 callbacks,调用所有的handle[1]
+        if(typeof handle[1] === 'function'){
+          handle[1].call(undefined, reason)
+        }
+      })
     },0)
   };
   constructor(fn){
@@ -17,9 +35,16 @@ class Promise2{
     }
     fn(this.resolve.bind(this), this.reject.bind(this));
   }
-  then(succeed, fail){
-    this.succeed = succeed; // 存到对象的属性上
-    this.fail = fail;
+  then(succeed?, fail?){
+    const handle = [succeed,fail];
+    if(typeof succeed === 'function'){
+      handle[0] = succeed;
+    }
+    if(typeof fail === 'function'){
+      handle[1] = fail;
+    }
+    this.callbacks.push(handle)
+    // 把函数推到callbacks
   }
 }
 
