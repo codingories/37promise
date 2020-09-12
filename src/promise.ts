@@ -1,7 +1,7 @@
 class Promise2{
   state = 'pending';
   callbacks = [];
-  resolveOrReject(state, data, i){
+  private resolveOrReject(state, data, i){
     if (this.state !== "pending") {return;}
     this.state = state;
     nextTick(()=>{
@@ -44,41 +44,49 @@ class Promise2{
     // 把函数推到callbacks
     return handle[2]
   }
-  resolveWith(x){
-    if(this === x){
-      // 这里的this是promise2
-      return this.reject(new TypeError())
-    } else if(x instanceof Promise2){
-      x.then(
-        result=>{
-          this.resolve(result)
-        },
-        reason=>{
-          this.reject(reason)
-        }
-      )
-    } else if(x instanceof Object){
-      let then; // 这段代码段的意思就是看下x.then是不是一个方法，是就调用
+  resolveWithSelf(){
+    this.reject(new TypeError)
+  }
+  resolveWithPromise(x){
+    x.then(
+      result=>{
+        this.resolve(result)
+      },
+      reason=>{
+        this.reject(reason)
+      }
+    )
+  }
+  resolveWithObject(x){
+    let then; // 这段代码段的意思就是看下x.then是不是一个方法，是就调用
+    try {
+      then = x.then
+    } catch(e){
+      this.reject(e)
+    }
+    if(then instanceof Function){
       try {
-        then = x.then
-      } catch(e){
+        x.then(y=>{
+            this.resolveWith(y)
+          },
+          r=>{
+            this.reject(r)
+          }
+        )
+      } catch (e) {
         this.reject(e)
       }
-      if(then instanceof Function){
-        try {
-          x.then(y=>{
-              this.resolveWith(y)
-            },
-            r=>{
-              this.reject(r)
-            }
-          )
-        } catch (e) {
-          this.reject(e)
-        }
-      } else {
-        this.resolve(x)
-      }
+    } else {
+      this.resolve(x)
+    }
+  }
+  resolveWith(x){
+    if(this === x){
+      this.resolveWithSelf();
+    } else if(x instanceof Promise2){
+      this.resolveWithPromise(x)
+    } else if(x instanceof Object){
+      this.resolveWithObject(x)
     } else {
       this.resolve(x)
     }
