@@ -39,7 +39,6 @@ describe("Promise", ()=>{
       done()
     })
   })
-
   it("promise.then(success)中的success 会在 resolve被调用的时候，执行", (done)=>{
     // done 表示等待的执行
     const success= sinon.fake()
@@ -179,4 +178,46 @@ describe("Promise", ()=>{
       done();
     })
   })
+  it("2.2.7 then必须返回一个promise", ()=>{
+    const promise = new Promise(resolve => {
+      resolve()
+    })
+    const promise2 = promise.then(()=>{},()=>{})
+    // @ts-ignore
+    assert(promise2 instanceof Promise);
+  })
+  it("2.2.7.1 如果then(success, fail)中的 success 返回一个值x, " +
+    "运行 [[Resolve]](promise2, x)",(done)=>{
+    const promise1 = new Promise(resolve => {
+      resolve()
+    })
+    const promise2 = promise1.then(()=>'成功',()=>{}).then(result => {
+      assert.equal(result, '成功')
+      done()
+    });
+  }),
+  it("2.2.7.2 如果x是一个Promise实例 " +
+    "运行 [[Resolve]](promise2, x)",(done)=>{
+    const promise1 = new Promise(resolve => {
+      resolve()
+    })
+    const fn =sinon.fake()
+    const promise2 =  promise1.then(
+      /* s1 */
+      ()=>new Promise(resolve=>{resolve()})
+    )
+    promise2.then(fn)
+    setTimeout(()=>{
+      assert(fn.called);
+      done()
+    },20)
+  })
 })
+
+// assert(promise2 instanceof Promise)
+// @ts-ignore
+// promise2.then((result)=>{
+//   // promise2会等success调用, success调用后会把成功传给promise2
+//
+// })
+// assert(promise2 instanceof Promise);
