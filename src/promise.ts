@@ -57,22 +57,29 @@ class Promise2{
       }
     )
   }
-  resolveWithObject(x){
-    let then; // 这段代码段的意思就是看下x.then是不是一个方法，是就调用
+  private getThen(x){
+    let then;
     try {
       then = x.then
     } catch(e){
-      this.reject(e)
+      return this.reject(e)
     }
+    return then;
+  }
+  resolveWithThenable(x){
+    x.then(y=>{
+        this.resolveWith(y)
+      },
+      r=>{
+        this.reject(r)
+      }
+    )
+  }
+  resolveWithObject(x){
+    let then = this.getThen(x); // 这段代码段的意思就是看下x.then是不是一个方法，是就调用
     if(then instanceof Function){
       try {
-        x.then(y=>{
-            this.resolveWith(y)
-          },
-          r=>{
-            this.reject(r)
-          }
-        )
+        this.resolveWithThenable(x);
       } catch (e) {
         this.reject(e)
       }
