@@ -1,35 +1,29 @@
 class Promise2{
   state = 'pending';
   callbacks = [];
-  resolve = (result)=>{
-    if (this.state !== "pending") {
-      return;
-    }
-    this.state = "fulfilled";
-    setTimeout(()=>{
+  resolveOrReject(state, data, i){
+    if (this.state !== "pending") {return;}
+    this.state = state;
+    nextTick(()=>{
       // 遍历 callbacks,调用所有的handle[0]
       this.callbacks.forEach((handle)=>{
-        if(typeof handle[0] === 'function'){
-          const x = handle[0].call(undefined, result)
+        if(typeof handle[i] === 'function'){
+          let x;
+          try {
+            x = handle[i].call(undefined, data)
+          } catch(e) {
+            return handle[2].reject(e)
+          }
           handle[2].resolveWith(x)
         }
       })
-    },0)
+    })
+  }
+  resolve = (result)=>{
+    this.resolveOrReject('fulfilled', result, 0)
   };
   reject = (reason)=>{
-    if (this.state !== "pending") {
-      return;
-    }
-    this.state = "rejected";
-    setTimeout(()=>{
-      this.callbacks.forEach((handle)=>{
-        // 遍历 callbacks,调用所有的handle[1]
-        if(typeof handle[1] === 'function'){
-          const x = handle[1].call(undefined, reason)
-          handle[2].resolveWith(x)
-        }
-      })
-    },0)
+    this.resolveOrReject('rejected', reason, 1)
   };
   constructor(fn){
     if(typeof fn !== 'function'){
@@ -73,8 +67,8 @@ class Promise2{
       if(then instanceof Function){
         try {
           x.then(y=>{
-            this.resolveWith(y)
-          },
+              this.resolveWith(y)
+            },
             r=>{
               this.reject(r)
             }
@@ -92,3 +86,20 @@ class Promise2{
 }
 
 export default Promise2;
+
+function nextTick(fn) {
+  if(process!==undefined && typeof process.nextTick === 'function'){
+    return process.nextTick(fn)
+  } else {
+    var counter = 1;
+    var observer = new MutationObserver(fn);
+    var textNode = document.createTextNode(String(counter));
+    // 先让文本内容为counter，然后让文本内容为counter, 文本节点变了，
+    // 变了后fn不会马上调用,会尽快调用,变化的时间比nextTick快
+    observer.observe(textNode, {
+      characterData: true
+    });
+    counter = counter + 1;
+    textNode.data = String(counter)
+  }
+}

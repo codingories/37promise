@@ -186,7 +186,7 @@ describe("Promise", ()=>{
     // @ts-ignore
     assert(promise2 instanceof Promise);
   })
-  it("2.2.7.1 如果then(success, fail)中的 success 返回一个值x, " +
+  it("2.2.7.1.2 success 的返回值是一个Promise 实例 " +
     "运行 [[Resolve]](promise2, x)",(done)=>{
     const promise1 = new Promise(resolve => {
       resolve()
@@ -196,7 +196,7 @@ describe("Promise", ()=>{
       done()
     });
   }),
-  it("2.2.7.2 如果x是一个Promise实例 " +
+  it("2.2.7.1.2 success 的返回值是一个Promise 实例，且失败 " +
     "运行 [[Resolve]](promise2, x)",(done)=>{
     const promise1 = new Promise(resolve => {
       resolve()
@@ -204,20 +204,82 @@ describe("Promise", ()=>{
     const fn =sinon.fake()
     const promise2 =  promise1.then(
       /* s1 */
-      ()=>new Promise(resolve=>{resolve()})
-    )
-    promise2.then(fn)
+      ()=>new Promise((resolve, reject)=> reject())
+    );
+    promise2.then(null, fn)
     setTimeout(()=>{
       assert(fn.called);
       done()
-    },20)
+    })
+  })
+  it("2.2.7.1.2 fail的返回值是一个Promise 实例 ",(done)=>{
+    const promise1 = new Promise((resolve, reject) => {
+      reject()
+    })
+    const fn =sinon.fake()
+    const promise2 =  promise1.then(
+      /* s1 */
+      null,
+      ()=>new Promise(resolve=> resolve())
+    );
+    promise2.then(fn, null) // 需要主力这里调用哪个是看resolve返回的的成功失败
+    setTimeout(()=>{
+      assert(fn.called);
+      done()
+    })
+  });
+  it("2.2.7.1.2 fail的返回值是一个Promise 实例且失败 ",(done)=>{
+    const promise1 = new Promise((resolve, reject) => {
+      reject()
+    })
+    const fn =sinon.fake()
+    const promise2 =  promise1.then(
+      /* s1 */
+      null,
+      ()=>new Promise((resolve, reject)=> reject())
+    );
+    promise2.then(null, fn)
+    setTimeout(()=>{
+      assert(fn.called);
+      done()
+    })
+  });
+  it("2.2.7.2 如果 success 抛出一个异常e, promise2 必须被拒绝",
+    (done)=>{
+      const promise1 = new Promise((resolve, reject) => {
+        resolve()
+      })
+      const fn =sinon.fake()
+      const error = new Error()
+      const promise2 =  promise1.then(
+        ()=>{
+          throw error;
+        }
+      );
+      promise2.then(null, fn)
+      setTimeout(()=>{
+        assert(fn.called);
+        assert(fn.calledWith(error));
+        done();
+    })
+  }),
+  it("2.2.7.2 如果 fail 抛出一个异常e, promise2 必须被拒绝",
+    (done)=>{
+      const promise1 = new Promise((resolve, reject) => {
+        reject()
+      })
+      const fn =sinon.fake()
+      const error = new Error()
+      const promise2 =  promise1.then(null,
+        ()=>{
+          throw error;
+        }
+      );
+      promise2.then(null, fn)
+      setTimeout(()=>{
+        assert(fn.called);
+        assert(fn.calledWith(error));
+        done();
+      })
   })
 })
-
-// assert(promise2 instanceof Promise)
-// @ts-ignore
-// promise2.then((result)=>{
-//   // promise2会等success调用, success调用后会把成功传给promise2
-//
-// })
-// assert(promise2 instanceof Promise);
